@@ -1,0 +1,160 @@
+Error: A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <InnerScrollAndFocusHandler segmentPath={[...]} focusAndScrollRef={{apply:false, ...}}>
+      <ErrorBoundary errorComponent={undefined} errorStyles={undefined} errorScripts={undefined}>
+        <LoadingBoundary loading={null}>
+          <HTTPAccessFallbackBoundary notFound={[...]} forbidden={undefined} unauthorized={undefined}>
+            <HTTPAccessFallbackErrorBoundary pathname="/" notFound={[...]} forbidden={undefined} unauthorized={undefined} ...>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <InnerLayoutRouter parallelRouterKey="children" url="/?agentCon..." tree={[...]} childNodes={Map} ...>
+                    <Page>
+                      <TranscriptProvider>
+                        <EventProvider>
+                          <App>
+                            <div
+                              className="text-base flex flex-col h-screen bg-gray-100 text-gray-800 relative"
+-                             data-dashlane-rid="2b2ed32b5be6f3db"
+                            >
+                              <div className="p-5 text-l...">
+                                <div>
+                                <div className="flex items...">
+                                  <label>
+                                  <div className="relative i...">
+                                    <select
+                                      value="questionSuggester"
+                                      onChange={function handleAgentChange}
+                                      className="appearance-none border border-gray-300 rounded-lg text-base px-2 py-1..."
+-                                     data-dashlane-rid="64e1b42ea847aaa6"
+-                                     data-dashlane-classification="other"
+                                    >
+                                    ...
+                                  <div className="flex items...">
+                                    <label>
+                                    <div className="relative i...">
+                                      <select
+                                        value=""
+                                        onChange={function handleSelectedAgentChange}
+                                        className="appearance-none border border-gray-300 rounded-lg text-base px-2 py..."
+-                                       data-dashlane-rid="c963fe8fe23edd63"
+-                                       data-dashlane-classification="other"
+                                      >
+                                      ...
+                              <div className="flex flex-...">
+                                <Transcript userText="" setUserText={function bound dispatchSetState} ...>
+                                  <div className="flex flex-...">
+                                    <div className="relative f...">
+                                      <button
+                                        onClick={function handleCopyTranscript}
+                                        className="absolute w-20 top-3 right-2 mr-1 z-10 text-sm px-3 py-2 rounded-ful..."
+-                                       data-dashlane-label="true"
+-                                       data-dashlane-rid="ec343a529ef3ec32"
+-                                       data-dashlane-classification="other"
+                                      >
++                                       Copy
+                                      ...
+                                    <div className="p-4 flex i...">
+                                      <input
+                                        ref={{current:null}}
+                                        type="text"
+                                        value=""
+                                        onChange={function onChange}
+                                        onKeyDown={function onKeyDown}
+                                        className="flex-1 px-4 py-2 focus:outline-none"
+                                        placeholder="Type a message..."
+-                                       data-dashlane-rid="8c75c5a9240f2af6"
+-                                       data-dashlane-classification="other"
+                                      >
+                                      <button
+                                        onClick={function handleSendTextMessage}
+                                        disabled={true}
+                                        className="bg-gray-900 text-white rounded-full px-2 py-2 disabled:opacity-50"
+-                                       data-dashlane-label="true"
+-                                       data-dashlane-rid="fcccc57b7354e721"
+-                                       data-dashlane-classification="other"
+                                      >
+                                ...
+                              <BottomToolbar sessionStatus="DISCONNECTED" ...>
+                                <div className="p-4 flex f...">
+                                  <button
+                                    onClick={function onToggleConnection}
+                                    className="bg-black hover:bg-gray-900 cursor-pointer text-white text-base p-2 w-36..."
+                                    disabled={false}
+-                                   data-dashlane-label="true"
+-                                   data-dashlane-rid="f13ecbff294591b4"
+-                                   data-dashlane-classification="other"
+                                  >
++                                   Connect
+                                  <div className="flex flex-...">
+                                    <input
+                                      id="push-to-talk"
+                                      type="checkbox"
+                                      checked={false}
+                                      onChange={function onChange}
+                                      disabled={true}
+                                      className="w-4 h-4"
+-                                     data-dashlane-rid="88d609bf3db2dd6a"
+-                                     data-dashlane-classification="other"
+                                    >
+                                    <label>
+                                    <button
+                                      onMouseDown={function handleTalkButtonDown}
+                                      onMouseUp={function handleTalkButtonUp}
+                                      onTouchStart={function handleTalkButtonDown}
+                                      onTouchEnd={function handleTalkButtonUp}
+                                      disabled={true}
+                                      className="bg-gray-200 py-1 px-4 cursor-pointer rounded-full bg-gray-100 text-gr..."
+-                                     data-dashlane-label="true"
+-                                     data-dashlane-rid="5f080f2d81cfcd55"
+-                                     data-dashlane-classification="other"
+                                    >
++                                     Talk
+                                  <div className="flex flex-...">
+                                    <input
+                                      id="audio-playback"
+                                      type="checkbox"
+                                      checked={true}
+                                      onChange={function onChange}
+                                      disabled={true}
+                                      className="w-4 h-4"
+-                                     data-dashlane-rid="81d123f35273c2f3"
+-                                     data-dashlane-classification="other"
+                                    >
+                                    ...
+                                  <div className="flex flex-...">
+                                    <input
+                                      id="logs"
+                                      type="checkbox"
+                                      checked={true}
+                                      onChange={function onChange}
+                                      className="w-4 h-4"
+-                                     data-dashlane-rid="6a127cfcae247620"
+-                                     data-dashlane-classification="other"
+                                    >
+                                    ...
+                    ...
+
+    at createUnhandledError (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/console-error.js:27:49)
+    at handleClientError (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/use-error-handler.js:44:56)
+    at console.error (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/globals/intercept-console-error.js:48:56)
+    at emitPendingHydrationWarnings (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:4300:17)
+    at completeWork (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:13611:18)
+    at runWithFiberInDEV (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:544:16)
+    at completeUnitOfWork (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:15200:19)
+    at performUnitOfWork (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:15081:11)
+    at workLoopConcurrent (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:15058:9)
+    at renderRootConcurrent (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:15033:15)
+    at performWorkOnRoot (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14350:13)
+    at performWorkOnRootViaSchedulerTask (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:15955:7)
+    at MessagePort.performWorkUntilDeadline (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/scheduler/cjs/scheduler.development.js:44:48)
