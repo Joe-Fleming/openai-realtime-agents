@@ -53,21 +53,33 @@ Regular intervals of suggestions, allowing enough time for the conversation to d
       parameters: {
         type: "object",
         properties: {
-          suggestedQuestion: {
-            type: "string",
-            description: "The proposed question to ask the customer.",
-          },
-          rationale: {
-            type: "string",
-            description: "Brief explanation of why this question would be valuable.",
-          },
-          priority: {
-            type: "string",
-            enum: ["high", "medium", "low"],
-            description: "The urgency/importance of asking this question.",
+          questions: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                suggestedQuestion: {
+                  type: "string",
+                  description: "The proposed question to ask the customer.",
+                },
+                rationale: {
+                  type: "string",
+                  description: "Brief explanation of why this question would be valuable.",
+                },
+                priority: {
+                  type: "string",
+                  enum: ["high", "medium", "low"],
+                  description: "The urgency/importance of asking this question.",
+                }
+              },
+              required: ["suggestedQuestion", "rationale", "priority"]
+            },
+            minItems: 3,
+            maxItems: 3,
+            description: "Array of three suggested questions with their rationales and priorities"
           }
         },
-        required: ["suggestedQuestion", "rationale", "priority"],
+        required: ["questions"],
       },
     },
   ],
