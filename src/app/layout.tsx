@@ -13,6 +13,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <meta name="dashlane-autofill-off" content="true" />
+      </head>
       <body className={`antialiased`}>{children}</body>
     </html>
   );
