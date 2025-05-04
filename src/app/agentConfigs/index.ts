@@ -1,9 +1,9 @@
 
 import { AllAgentConfigsType } from "@/app/types";
-import questionSuggester from "./questionSuggester";
+import salesCopilot from "./salesCopilot";
 
 export const allAgentSets: AllAgentConfigsType = {
-  questionSuggester: [questionSuggester],
+  salesCopilot: [salesCopilot],
 };
 
-export const defaultAgentSetKey = "questionSuggester";
+export const defaultAgentSetKey = "salesCopilot";
