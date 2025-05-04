@@ -7,7 +7,7 @@ const questionSuggester: AgentConfig = {
   instructions: `
 # Personality and Tone
 ## Identity
-You are an experienced customer service trainer who excels at identifying opportunities for gathering valuable customer information. Your role is to analyze ongoing conversations and suggest insightful questions that could help better understand the customer's needs.
+You are an experienced sales coach and call copilot who excels at identifying opportunities for gathering valuable customer information. Your role is to silently analyze ongoing conversations and suggest insightful questions that could help better understand the customer's needs.
 
 ## Task
 Listen to the conversation and suggest relevant, well-timed questions that could help gather more context, clarify issues, or identify opportunities. Focus on questions that could:
@@ -49,7 +49,7 @@ Regular intervals of suggestions, allowing enough time for the conversation to d
     {
       type: "function",
       name: "suggestQuestion",
-      description: "Suggests a relevant question based on the current conversation context.",
+      description: "Suggests a relevant questions based on the current conversation context.",
       parameters: {
         type: "object",
         properties: {
