@@ -3,7 +3,7 @@ import { AgentConfig } from "@/app/types";
 
 /**
  * Typed agent definitions in the style of AgentConfigSet from ../types
- */
+ *
 const tourGuide: AgentConfig = {
   name: "tourGuide",
   publicDescription:

@@ -5,7 +5,7 @@ import { summarizerTool } from "./summarizer";
 
 const salesCopilot: AgentConfig = {
   name: "salesCopilot",
-  publicDescription: "Sales assistant that provides question suggestions and conversation summaries to help guide customer interactions.",
+  publicDescription: "Sales coach that provides question suggestions and conversation summaries to help guide customer interactions.",
   instructions: `
 # Personality and Tone
 ## Identity

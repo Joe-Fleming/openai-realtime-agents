@@ -2,7 +2,7 @@ import { AgentConfig, Tool } from "@/app/types";
 
 /**
  * This defines and adds "transferAgents" tool dynamically based on the specified downstreamAgents on each agent.
- */
+ 
 export function injectTransferTools(agentDefs: AgentConfig[]): AgentConfig[] {
   // Iterate over each agent definition
   agentDefs.forEach((agentDef) => {
