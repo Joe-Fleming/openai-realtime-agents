@@ -77,7 +77,7 @@ export async function createRealtimeConnection(
 
   // Add system audio track if available
   if (systemStream) {
-    systemStream.getTracks().forEach(track => {
+    systemStream.getAudioTracks().forEach(track => {
       pc.addTrack(track, systemStream);
     });
   }
@@ -108,4 +108,4 @@ export async function createRealtimeConnection(
   await pc.setRemoteDescription(answer);
 
   return { pc, dc };
-} 
+}
