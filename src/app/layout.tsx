@@ -14,7 +14,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-  <meta name="dashlane-autofill-off" content="true" />
+        <meta name="format-detection" content="telephone=no,date=no,address=no,email=no,url=no" />
+        <meta name="disable-autofill" content="true" />
         <meta name="dashlane-autofill-off" content="true" />
       </head>
       <body className={`antialiased`}>{children}</body>

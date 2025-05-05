@@ -458,7 +458,7 @@ function App() {
                   onChange={handleSelectedAgentChange}
                   className="appearance-none border border-gray-300 rounded-lg text-base px-2 py-1 pr-8 cursor-pointer font-normal focus:outline-none"
                 >
-                  {selectedAgentConfigSet?.map(agent => (
+                  {Array.isArray(selectedAgentConfigSet) && selectedAgentConfigSet.map(agent => (
                     <option key={agent.name} value={agent.name}>
                       {agent.name}
                     </option>

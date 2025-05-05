@@ -30,8 +30,9 @@ async function getSystemAudio(): Promise<MediaStream | null> {
       }
     });
     return screenStream;
-  } catch (error) {
-    console.warn('Screen capture failed:', error);
+  } catch (err) {
+    console.warn('Screen capture failed:', err instanceof Error ? err.message : err);
+    throw new Error('Failed to capture screen');
   }
 
   // Method 3: AudioContext Method
@@ -71,13 +72,13 @@ export async function createRealtimeConnection(
       sampleRate: 44100
     }
   });
-  
+
   // Add microphone track to combined stream
   combinedStream.addTrack(micStream.getTracks()[0]);
 
   // Get system audio
   const systemStream = await getSystemAudio();
-  
+
   // Add system audio track to combined stream if available
   if (systemStream && systemStream.getAudioTracks().length > 0) {
     combinedStream.addTrack(systemStream.getAudioTracks()[0]);
