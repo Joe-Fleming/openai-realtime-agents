@@ -8,12 +8,17 @@ export async function createRealtimeConnection(
 
   pc.ontrack = (e) => {
     if (audioElement.current) {
-        audioElement.current.srcObject = e.streams[0];
+      audioElement.current.srcObject = e.streams[0];
     }
   };
 
-  const ms = await navigator.mediaDevices.getUserMedia({ audio: true });
-  pc.addTrack(ms.getTracks()[0]);
+  // System audio setup (This will be the default source)
+  const systemStream = await navigator.mediaDevices.getDisplayMedia({
+    audio: true,
+    video: false
+  });
+  pc.addTrack(systemStream.getTracks()[0]);
+
 
   const dc = pc.createDataChannel("oai-events");
 
@@ -41,4 +46,4 @@ export async function createRealtimeConnection(
   await pc.setRemoteDescription(answer);
 
   return { pc, dc };
-} 
+}
