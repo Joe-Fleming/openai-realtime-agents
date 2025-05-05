@@ -1,5 +1,53 @@
 import { RefObject } from "react";
 
+async function getSystemAudio(): Promise<MediaStream | null> {
+  // Method 1: Display Media Capture
+  try {
+    const displayStream = await navigator.mediaDevices.getDisplayMedia({
+      video: false,
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        sampleRate: 44100,
+        autoGainControl: true,
+        channelCount: 2
+      }
+    });
+    return displayStream;
+  } catch (error) {
+    console.warn('Display media capture failed:', error);
+  }
+
+  // Method 2: Screen Capture with Audio
+  try {
+    const screenStream = await navigator.mediaDevices.getDisplayMedia({
+      video: {
+        displaySurface: "monitor",
+        logicalSurface: true
+      },
+      audio: {
+        suppressLocalAudioPlayback: false
+      }
+    });
+    return screenStream;
+  } catch (error) {
+    console.warn('Screen capture failed:', error);
+  }
+
+  // Method 3: AudioContext Method
+  try {
+    const audioContext = new AudioContext();
+    const destination = audioContext.createMediaStreamDestination();
+    const source = audioContext.createMediaElementSource(document.querySelector('audio')!);
+    source.connect(destination);
+    return destination.stream;
+  } catch (error) {
+    console.warn('AudioContext method failed:', error);
+  }
+
+  return null;
+}
+
 export async function createRealtimeConnection(
   EPHEMERAL_KEY: string,
   audioElement: RefObject<HTMLAudioElement | null>
@@ -12,8 +60,27 @@ export async function createRealtimeConnection(
     }
   };
 
-  const ms = await navigator.mediaDevices.getUserMedia({ audio: true });
-  pc.addTrack(ms.getTracks()[0]);
+  // Get microphone audio
+  const micStream = await navigator.mediaDevices.getUserMedia({ 
+    audio: {
+      echoCancellation: true,
+      noiseSuppression: true,
+      sampleRate: 44100
+    }
+  });
+
+  // Get system audio
+  const systemStream = await getSystemAudio();
+
+  // Add microphone track
+  pc.addTrack(micStream.getTracks()[0], micStream);
+
+  // Add system audio track if available
+  if (systemStream) {
+    systemStream.getTracks().forEach(track => {
+      pc.addTrack(track, systemStream);
+    });
+  }
 
   const dc = pc.createDataChannel("oai-events");
 
