@@ -76,32 +76,34 @@ export async function createRealtimeConnection(
   // Create a new MediaStream to combine audio sources
   const combinedStream = new MediaStream();
 
-  // Get microphone audio with specific constraints
+  // Get microphone audio with recommended settings
   try {
     const micStream = await navigator.mediaDevices.getUserMedia({
       audio: {
-        channelCount: 1,
-        sampleRate: 16000,
-        sampleSize: 16,
-        volume: 1.0,
         echoCancellation: true,
         noiseSuppression: true,
-        autoGainControl: true
-      }
+        autoGainControl: true,
+        channelCount: 1,
+        sampleRate: 24000,
+        sampleSize: 16
+      },
+      video: false
     });
 
-    if (!micStream || !micStream.getTracks().length) {
-      throw new Error('No audio tracks available from microphone');
-    }
-
-    // Create Audio Context and Processor
-    const audioContext = new AudioContext({
-      sampleRate: 16000,
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)({
+      sampleRate: 24000,
       latencyHint: 'interactive'
     });
-    
+
     const source = audioContext.createMediaStreamSource(micStream);
-    const processor = audioContext.createScriptProcessor(1024, 1, 1);
+    const destination = audioContext.createMediaStreamDestination();
+
+    // Configure processor with recommended settings
+    const bufferSize = 2048; // Increased for better stability
+    const numberOfInputChannels = 1;
+    const numberOfOutputChannels = 1;
+
+    const processor = audioContext.createScriptProcessor(bufferSize, numberOfInputChannels, numberOfOutputChannels);
 
     source.connect(processor);
     processor.connect(audioContext.destination);
@@ -114,7 +116,7 @@ export async function createRealtimeConnection(
       for (let i = 0; i < inputData.length; i++) {
         pcmData[i] = inputData[i] * 0x7fff;
       }
-      
+
       // Add processed track to combined stream
       const track = micStream.getAudioTracks()[0];
       if (track) {
