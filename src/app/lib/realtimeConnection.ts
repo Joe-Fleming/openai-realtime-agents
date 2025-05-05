@@ -76,29 +76,55 @@ export async function createRealtimeConnection(
   // Create a new MediaStream to combine audio sources
   const combinedStream = new MediaStream();
 
-  // Get microphone audio
+  // Get microphone audio with specific constraints
   try {
-    const micStream = await navigator.mediaDevices.getUserMedia({ 
+    const micStream = await navigator.mediaDevices.getUserMedia({
       audio: {
+        channelCount: 1,
+        sampleRate: 16000,
+        sampleSize: 16,
+        volume: 1.0,
         echoCancellation: true,
         noiseSuppression: true,
-        sampleRate: 44100,
-        channelCount: 1
+        autoGainControl: true
       }
-    }).catch(err => {
-      console.error('Microphone access error:', err);
-      throw new Error('Failed to access microphone');
     });
 
     if (!micStream || !micStream.getTracks().length) {
       throw new Error('No audio tracks available from microphone');
     }
 
-    // Add microphone track to combined stream
-    combinedStream.addTrack(micStream.getTracks()[0]);
+    // Create Audio Context and Processor
+    const audioContext = new AudioContext({
+      sampleRate: 16000,
+      latencyHint: 'interactive'
+    });
+    
+    const source = audioContext.createMediaStreamSource(micStream);
+    const processor = audioContext.createScriptProcessor(1024, 1, 1);
+
+    source.connect(processor);
+    processor.connect(audioContext.destination);
+
+    // Process audio data
+    processor.onaudioprocess = (e) => {
+      const inputData = e.inputBuffer.getChannelData(0);
+      // Convert float32 to int16
+      const pcmData = new Int16Array(inputData.length);
+      for (let i = 0; i < inputData.length; i++) {
+        pcmData[i] = inputData[i] * 0x7fff;
+      }
+      
+      // Add processed track to combined stream
+      const track = micStream.getAudioTracks()[0];
+      if (track) {
+        combinedStream.addTrack(track);
+      }
+    };
+
   } catch (error) {
     console.error("Error getting microphone audio:", error);
-    // Handle the error appropriately, e.g., display a message to the user
+    throw new Error('Failed to setup audio recording');
   }
 
 
