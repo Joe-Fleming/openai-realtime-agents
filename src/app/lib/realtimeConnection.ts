@@ -60,6 +60,9 @@ export async function createRealtimeConnection(
     }
   };
 
+  // Create a new MediaStream to combine audio sources
+  const combinedStream = new MediaStream();
+
   // Get microphone audio
   const micStream = await navigator.mediaDevices.getUserMedia({ 
     audio: {
@@ -68,19 +71,22 @@ export async function createRealtimeConnection(
       sampleRate: 44100
     }
   });
+  
+  // Add microphone track to combined stream
+  combinedStream.addTrack(micStream.getTracks()[0]);
 
   // Get system audio
   const systemStream = await getSystemAudio();
-
-  // Add microphone track
-  pc.addTrack(micStream.getTracks()[0], micStream);
-
-  // Add system audio track if available
-  if (systemStream) {
-    systemStream.getAudioTracks().forEach(track => {
-      pc.addTrack(track, systemStream);
-    });
+  
+  // Add system audio track to combined stream if available
+  if (systemStream && systemStream.getAudioTracks().length > 0) {
+    combinedStream.addTrack(systemStream.getAudioTracks()[0]);
   }
+
+  // Add the combined stream to the peer connection
+  combinedStream.getTracks().forEach(track => {
+    pc.addTrack(track, combinedStream);
+  });
 
   const dc = pc.createDataChannel("oai-events");
 
