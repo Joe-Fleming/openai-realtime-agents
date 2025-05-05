@@ -12,63 +12,90 @@ export async function createRealtimeConnection(
     }
   };
 
-  // Setup audio context and analyzers
-  const audioContext = new AudioContext();
-  
-  // Microphone setup
-  const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  const micSource = audioContext.createMediaStreamSource(micStream);
-  const micAnalyser = audioContext.createAnalyser();
-  micSource.connect(micAnalyser);
+  try {
+    // Microphone setup
+    const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    
+    // System audio setup
+    const systemStream = await navigator.mediaDevices.getDisplayMedia({
+      audio: true,
+      video: false
+    });
 
-  // System audio setup
-  const systemStream = await navigator.mediaDevices.getDisplayMedia({
-    audio: true,
-    video: false
-  });
-  const systemSource = audioContext.createMediaStreamSource(systemStream);
-  const systemAnalyser = audioContext.createAnalyser();
-  systemSource.connect(systemAnalyser);
+    // Setup audio context and analyzers
+    const audioContext = new AudioContext();
+    const micSource = audioContext.createMediaStreamSource(micStream);
+    const systemSource = audioContext.createMediaStreamSource(systemStream);
+    
+    const micAnalyser = audioContext.createAnalyser();
+    const systemAnalyser = audioContext.createAnalyser();
+    
+    micSource.connect(micAnalyser);
+    systemSource.connect(systemAnalyser);
 
-  let activeSource = 'sales_rep';
-  
-  // Function to detect audio activity
-  const detectAudioActivity = () => {
-    const micData = new Uint8Array(micAnalyser.frequencyBinCount);
-    const systemData = new Uint8Array(systemAnalyser.frequencyBinCount);
+    let activeSource = 'sales_rep';
+    let currentInterval: NodeJS.Timeout | null = null;
     
-    micAnalyser.getByteFrequencyData(micData);
-    systemAnalyser.getByteFrequencyData(systemData);
-    
-    const micLevel = micData.reduce((a, b) => a + b) / micData.length;
-    const systemLevel = systemData.reduce((a, b) => a + b) / systemData.length;
-    
-    // Switch source based on audio levels
-    if (micLevel > 30 && systemLevel < 30) {
-      if (activeSource !== 'sales_rep') {
-        activeSource = 'sales_rep';
-        pc.getSenders()[0].replaceTrack(micStream.getTracks()[0]);
+    // Function to detect audio activity
+    const detectAudioActivity = () => {
+      const micData = new Uint8Array(micAnalyser.frequencyBinCount);
+      const systemData = new Uint8Array(systemAnalyser.frequencyBinCount);
+      
+      micAnalyser.getByteFrequencyData(micData);
+      systemAnalyser.getByteFrequencyData(systemData);
+      
+      const micLevel = micData.reduce((a, b) => a + b) / micData.length;
+      const systemLevel = systemData.reduce((a, b) => a + b) / systemData.length;
+      
+      // Switch source based on audio levels
+      if (micLevel > 30 && systemLevel < 30) {
+        if (activeSource !== 'sales_rep') {
+          activeSource = 'sales_rep';
+          const sender = pc.getSenders().find(s => s.track?.kind === 'audio');
+          if (sender) {
+            sender.replaceTrack(micStream.getTracks()[0]);
+          }
+        }
+      } else if (systemLevel > 30 && micLevel < 30) {
+        if (activeSource !== 'prospect') {
+          activeSource = 'prospect';
+          const sender = pc.getSenders().find(s => s.track?.kind === 'audio');
+          if (sender) {
+            sender.replaceTrack(systemStream.getTracks()[0]);
+          }
+        }
       }
-    } else if (systemLevel > 30 && micLevel < 30) {
-      if (activeSource !== 'prospect') {
-        activeSource = 'prospect';
-        pc.getSenders()[0].replaceTrack(systemStream.getTracks()[0]);
+    };
+
+    // Start monitoring audio levels
+    currentInterval = setInterval(detectAudioActivity, 100);
+
+    // Add initial track (microphone)
+    pc.addTrack(micStream.getTracks()[0]);
+
+    // Clean up function
+    const cleanup = () => {
+      if (currentInterval) {
+        clearInterval(currentInterval);
       }
-    }
-  };
+      micStream.getTracks().forEach(track => track.stop());
+      systemStream.getTracks().forEach(track => track.stop());
+      audioContext.close();
+    };
 
-  // Start monitoring audio levels
-  setInterval(detectAudioActivity, 100);
+    // Add cleanup to peer connection close event
+    pc.addEventListener('connectionstatechange', () => {
+      if (pc.connectionState === 'closed') {
+        cleanup();
+      }
+    });
 
-  // Create a new MediaStream for both sources
-  const combinedStream = new MediaStream();
-  combinedStream.addTrack(micStream.getTracks()[0]);
-  combinedStream.addTrack(systemStream.getTracks()[0]);
-  
-  // Add the combined stream track
-  combinedStream.getTracks().forEach(track => {
-    pc.addTrack(track, combinedStream);
-  });
+    // Return cleanup function
+    return cleanup;
+  } catch (error) {
+    console.error('Error setting up audio streams:', error);
+    throw error;
+  }
 
   const dc = pc.createDataChannel("oai-events");
 
