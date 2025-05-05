@@ -60,8 +60,15 @@ export async function createRealtimeConnection(
   // Start monitoring audio levels
   setInterval(detectAudioActivity, 100);
 
-  // Add initial track
-  pc.addTrack(micStream.getTracks()[0]);
+  // Create a new MediaStream for both sources
+  const combinedStream = new MediaStream();
+  combinedStream.addTrack(micStream.getTracks()[0]);
+  combinedStream.addTrack(systemStream.getTracks()[0]);
+  
+  // Add the combined stream track
+  combinedStream.getTracks().forEach(track => {
+    pc.addTrack(track, combinedStream);
+  });
 
   const dc = pc.createDataChannel("oai-events");
 
