@@ -3,6 +3,11 @@ import { RefObject } from "react";
 async function getSystemAudio(): Promise<MediaStream | null> {
   // Method 1: Display Media Capture
   try {
+    // Check if getDisplayMedia is supported
+    if (!navigator.mediaDevices?.getDisplayMedia) {
+      throw new Error('Screen capture not supported in this browser');
+    }
+
     const displayStream = await navigator.mediaDevices.getDisplayMedia({
       video: false,
       audio: {
@@ -13,9 +18,16 @@ async function getSystemAudio(): Promise<MediaStream | null> {
         channelCount: 2
       }
     });
+
+    // Verify we got audio tracks
+    if (!displayStream.getAudioTracks().length) {
+      throw new Error('No audio track available in screen capture');
+    }
+
     return displayStream;
   } catch (error) {
-    console.warn('Display media capture failed:', error);
+    console.warn('Display media capture failed:', error instanceof Error ? error.message : 'Unknown error');
+    // Continue to next method instead of returning null
   }
 
   // Method 2: Screen Capture with Audio
