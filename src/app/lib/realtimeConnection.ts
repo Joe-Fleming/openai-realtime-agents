@@ -65,16 +65,30 @@ export async function createRealtimeConnection(
   const combinedStream = new MediaStream();
 
   // Get microphone audio
-  const micStream = await navigator.mediaDevices.getUserMedia({ 
-    audio: {
-      echoCancellation: true,
-      noiseSuppression: true,
-      sampleRate: 44100
-    }
-  });
+  try {
+    const micStream = await navigator.mediaDevices.getUserMedia({ 
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        sampleRate: 44100,
+        channelCount: 1
+      }
+    }).catch(err => {
+      console.error('Microphone access error:', err);
+      throw new Error('Failed to access microphone');
+    });
 
-  // Add microphone track to combined stream
-  combinedStream.addTrack(micStream.getTracks()[0]);
+    if (!micStream || !micStream.getTracks().length) {
+      throw new Error('No audio tracks available from microphone');
+    }
+
+    // Add microphone track to combined stream
+    combinedStream.addTrack(micStream.getTracks()[0]);
+  } catch (error) {
+    console.error("Error getting microphone audio:", error);
+    // Handle the error appropriately, e.g., display a message to the user
+  }
+
 
   // Get system audio
   const systemStream = await getSystemAudio();
