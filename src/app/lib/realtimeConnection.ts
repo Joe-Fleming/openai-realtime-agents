@@ -1,54 +1,5 @@
 import { RefObject } from "react";
 
-async function getSystemAudio(): Promise<MediaStream | null> {
-  // Method 1: Display Media Capture
-  try {
-    const displayStream = await navigator.mediaDevices.getDisplayMedia({
-      video: false,
-      audio: {
-        echoCancellation: true,
-        noiseSuppression: true,
-        sampleRate: 44100,
-        autoGainControl: true,
-        channelCount: 2
-      }
-    });
-    return displayStream;
-  } catch (error) {
-    console.warn('Display media capture failed:', error);
-  }
-
-  // Method 2: Screen Capture with Audio
-  try {
-    const screenStream = await navigator.mediaDevices.getDisplayMedia({
-      video: {
-        displaySurface: "monitor",
-        logicalSurface: true
-      },
-      audio: {
-        suppressLocalAudioPlayback: false
-      }
-    });
-    return screenStream;
-  } catch (err) {
-    console.warn('Screen capture failed:', err instanceof Error ? err.message : err);
-    throw new Error('Failed to capture screen');
-  }
-
-  // Method 3: AudioContext Method
-  try {
-    const audioContext = new AudioContext();
-    const destination = audioContext.createMediaStreamDestination();
-    const source = audioContext.createMediaElementSource(document.querySelector('audio')!);
-    source.connect(destination);
-    return destination.stream;
-  } catch (error) {
-    console.warn('AudioContext method failed:', error);
-  }
-
-  return null;
-}
-
 export async function createRealtimeConnection(
   EPHEMERAL_KEY: string,
   audioElement: RefObject<HTMLAudioElement | null>
@@ -61,33 +12,8 @@ export async function createRealtimeConnection(
     }
   };
 
-  // Create a new MediaStream to combine audio sources
-  const combinedStream = new MediaStream();
-
-  // Get microphone audio
-  const micStream = await navigator.mediaDevices.getUserMedia({ 
-    audio: {
-      echoCancellation: true,
-      noiseSuppression: true,
-      sampleRate: 44100
-    }
-  });
-
-  // Add microphone track to combined stream
-  combinedStream.addTrack(micStream.getTracks()[0]);
-
-  // Get system audio
-  const systemStream = await getSystemAudio();
-
-  // Add system audio track to combined stream if available
-  if (systemStream && systemStream.getAudioTracks().length > 0) {
-    combinedStream.addTrack(systemStream.getAudioTracks()[0]);
-  }
-
-  // Add the combined stream to the peer connection
-  combinedStream.getTracks().forEach(track => {
-    pc.addTrack(track, combinedStream);
-  });
+  const ms = await navigator.mediaDevices.getUserMedia({ audio: true });
+  pc.addTrack(ms.getTracks()[0]);
 
   const dc = pc.createDataChannel("oai-events");
 
@@ -115,4 +41,4 @@ export async function createRealtimeConnection(
   await pc.setRemoteDescription(answer);
 
   return { pc, dc };
-}
+} 
