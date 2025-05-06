@@ -1,4 +1,3 @@
-
 import { RefObject } from "react";
 
 export async function createRealtimeConnection(
@@ -17,18 +16,34 @@ export async function createRealtimeConnection(
   };
 
   try {
-    // Request audio with specific constraints for better compatibility
-    const stream = await navigator.mediaDevices.getUserMedia({
-      audio: {
-        echoCancellation: { ideal: true },
-        noiseSuppression: { ideal: true },
-        autoGainControl: { ideal: true },
-        channelCount: { ideal: 1 },
-        sampleRate: { ideal: 16000 },
-        sampleSize: { ideal: 16 }
-      },
-      video: false
-    });
+    // Request both system audio and microphone
+    const [systemStream, micStream] = await Promise.all([
+      navigator.mediaDevices.getDisplayMedia({
+        audio: {
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false,
+        },
+        video: false
+      }),
+      navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: { ideal: true },
+          noiseSuppression: { ideal: true },
+          autoGainControl: { ideal: true },
+          channelCount: { ideal: 1 },
+          sampleRate: { ideal: 16000 },
+          sampleSize: { ideal: 16 }
+        },
+        video: false
+      })
+    ]);
+
+    // Create a combined stream with both audio sources
+    const stream = new MediaStream([
+      ...systemStream.getAudioTracks(),
+      ...micStream.getAudioTracks()
+    ]);
 
     // Add each audio track to the peer connection
     stream.getAudioTracks().forEach(track => {
