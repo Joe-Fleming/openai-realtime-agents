@@ -1,0 +1,10 @@
+{
+    "configurations": [
+        {
+            "type": "chrome",
+            "name": "http://localhost:3000/?agentConfig=salesCopilot",
+            "request": "launch",
+            "url": "http://localhost:3000/?agentConfig=salesCopilot"
+        }
+    ]
+}

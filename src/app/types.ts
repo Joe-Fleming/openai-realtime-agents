@@ -68,6 +68,7 @@ export interface ServerEvent {
   item_id?: string;
   transcript?: string;
   delta?: string;
+  _audioSource?: "mic" | "tab";
   session?: {
     id?: string;
   };

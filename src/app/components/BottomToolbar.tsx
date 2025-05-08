@@ -3,7 +3,7 @@ import { SessionStatus } from "@/app/types";
 
 interface BottomToolbarProps {
   sessionStatus: SessionStatus;
-  onToggleConnection: () => void;
+  onToggleConnection?: () => void;
   isPTTActive: boolean;
   setIsPTTActive: (val: boolean) => void;
   isPTTUserSpeaking: boolean;
@@ -13,6 +13,8 @@ interface BottomToolbarProps {
   setIsEventsPaneExpanded: (val: boolean) => void;
   isAudioPlaybackEnabled: boolean;
   setIsAudioPlaybackEnabled: (val: boolean) => void;
+  activeSource: "mic" | "tab";
+  setActiveSource: (source: "mic" | "tab") => void;
 }
 
 function BottomToolbar({
@@ -27,6 +29,8 @@ function BottomToolbar({
   setIsEventsPaneExpanded,
   isAudioPlaybackEnabled,
   setIsAudioPlaybackEnabled,
+  activeSource,
+  setActiveSource,
 }: BottomToolbarProps) {
   const isConnected = sessionStatus === "CONNECTED";
   const isConnecting = sessionStatus === "CONNECTING";
@@ -51,15 +55,42 @@ function BottomToolbar({
 
   return (
     <div className="p-4 flex flex-row items-center justify-center gap-x-8">
-      <button
-        onClick={onToggleConnection}
-        className={getConnectionButtonClasses()}
-        disabled={isConnecting}
-      >
-        {getConnectionButtonLabel()}
-      </button>
+      {onToggleConnection && (
+        <button
+          onClick={onToggleConnection}
+          className={getConnectionButtonClasses()}
+          disabled={isConnecting}
+        >
+          {getConnectionButtonLabel()}
+        </button>
+      )}
 
       <div className="flex flex-row items-center gap-2">
+        <div className="flex items-center gap-2 mr-4">
+          <input
+            type="radio"
+            id="mic-source"
+            name="audio-source"
+            checked={activeSource === "mic"}
+            onChange={() => setActiveSource("mic")}
+            className="w-4 h-4"
+          />
+          <label htmlFor="mic-source" className="cursor-pointer">
+            Mic
+          </label>
+          <input
+            type="radio"
+            id="tab-source"
+            name="audio-source"
+            checked={activeSource === "tab"}
+            onChange={() => setActiveSource("tab")}
+            className="w-4 h-4"
+          />
+          <label htmlFor="tab-source" className="cursor-pointer">
+            Tab
+          </label>
+        </div>
+
         <input
           id="push-to-talk"
           type="checkbox"

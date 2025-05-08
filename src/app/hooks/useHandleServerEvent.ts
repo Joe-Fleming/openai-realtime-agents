@@ -6,10 +6,10 @@ import { useEvent } from "@/app/contexts/EventContext";
 import { useRef } from "react";
 
 export interface UseHandleServerEventParams {
-  setSessionStatus: (status: SessionStatus) => void;
+  setSessionStatus: (status: SessionStatus, source: "mic" | "tab") => void;
   selectedAgentName: string;
   selectedAgentConfigSet: AgentConfig[] | null;
-  sendClientEvent: (eventObj: any, eventNameSuffix?: string) => void;
+  sendClientEvent: (eventObj: any, eventNameSuffix?: string, source?: "mic" | "tab") => void;
   setSelectedAgentName: (name: string) => void;
   shouldForceResponse?: boolean;
 }
@@ -104,15 +104,16 @@ export function useHandleServerEvent({
 
   const handleServerEvent = (serverEvent: ServerEvent) => {
     logServerEvent(serverEvent);
+    const source = serverEvent._audioSource as "mic" | "tab" || "mic";
 
     switch (serverEvent.type) {
       case "session.created": {
         if (serverEvent.session?.id) {
-          setSessionStatus("CONNECTED");
+          setSessionStatus("CONNECTED", source);
           addTranscriptBreadcrumb(
             `session.id: ${
               serverEvent.session.id
-            }\nStarted at: ${new Date().toLocaleString()}`
+            }\nStarted at: ${new Date().toLocaleString()}\nSource: ${source}`
           );
         }
         break;

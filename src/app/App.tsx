@@ -36,12 +36,15 @@ function App() {
   const [selectedAgentConfigSet, setSelectedAgentConfigSet] =
     useState<AgentConfig[] | null>(null);
 
-  const [dataChannel, setDataChannel] = useState<RTCDataChannel | null>(null);
-  const pcRef = useRef<RTCPeerConnection | null>(null);
-  const dcRef = useRef<RTCDataChannel | null>(null);
-  const audioElementRef = useRef<HTMLAudioElement | null>(null);
-  const [sessionStatus, setSessionStatus] =
-    useState<SessionStatus>("DISCONNECTED");
+  const [micConnection, setMicConnection] = useState<{ pc: RTCPeerConnection | null, dc: RTCDataChannel | null } | null>(null);
+  const [tabConnection, setTabConnection] = useState<{ pc: RTCPeerConnection | null, dc: RTCDataChannel | null } | null>(null);
+  const micAudioRef = useRef<HTMLAudioElement | null>(null);
+  const tabAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [micEphemeralKey, setMicEphemeralKey] = useState<string | null>(null);
+  const [tabEphemeralKey, setTabEphemeralKey] = useState<string | null>(null);
+  const [micStatus, setMicStatus] = useState<SessionStatus>("DISCONNECTED");
+  const [tabStatus, setTabStatus] = useState<SessionStatus>("DISCONNECTED");
+  const [activeSource, setActiveSource] = useState<"mic" | "tab">("mic");
 
   const [isEventsPaneExpanded, setIsEventsPaneExpanded] =
     useState<boolean>(true);
@@ -51,10 +54,11 @@ function App() {
   const [isAudioPlaybackEnabled, setIsAudioPlaybackEnabled] =
     useState<boolean>(true);
 
-  const sendClientEvent = (eventObj: any, eventNameSuffix = "") => {
-    if (dcRef.current && dcRef.current.readyState === "open") {
+  const sendClientEvent = (eventObj: any, eventNameSuffix = "", source: "mic" | "tab" = "mic") => {
+    const connection = source === "mic" ? micConnection : tabConnection;
+    if (connection?.dc && connection.dc.readyState === "open") {
       logClientEvent(eventObj, eventNameSuffix);
-      dcRef.current.send(JSON.stringify(eventObj));
+      connection.dc.send(JSON.stringify(eventObj));
     } else {
       logClientEvent(
         { attemptedEvent: eventObj.type },
@@ -68,7 +72,13 @@ function App() {
   };
 
   const handleServerEventRef = useHandleServerEvent({
-    setSessionStatus,
+    setSessionStatus: (status: SessionStatus, source: "mic" | "tab" = "mic") => {
+      if (source === "mic") {
+        setMicStatus(status);
+      } else {
+        setTabStatus(status);
+      }
+    },
     selectedAgentName,
     selectedAgentConfigSet,
     sendClientEvent,
@@ -93,38 +103,31 @@ function App() {
   }, [searchParams]);
 
   useEffect(() => {
-    if (selectedAgentName && sessionStatus === "DISCONNECTED") {
-      connectToRealtime();
+    if (selectedAgentName && (micStatus === "DISCONNECTED" || tabStatus === "DISCONNECTED")) {
+      if (micStatus === "DISCONNECTED") connectMic();
+      if (tabStatus === "DISCONNECTED") connectTab();
     }
   }, [selectedAgentName]);
 
   useEffect(() => {
-    if (
-      sessionStatus === "CONNECTED" &&
-      selectedAgentConfigSet &&
-      selectedAgentName
-    ) {
-      const currentAgent = selectedAgentConfigSet.find(
-        (a) => a.name === selectedAgentName
-      );
-      addTranscriptBreadcrumb(
-        `Agent: ${selectedAgentName}`,
-        currentAgent
-      );
-      updateSession(true);
+    if ((micStatus === "CONNECTED" || tabStatus === "CONNECTED") && selectedAgentConfigSet && selectedAgentName) {
+      const currentAgent = selectedAgentConfigSet.find((a) => a.name === selectedAgentName);
+      addTranscriptBreadcrumb(`Agent: ${selectedAgentName}`, currentAgent);
+      if (micStatus === "CONNECTED") updateSession(true, "mic");
+      if (tabStatus === "CONNECTED") updateSession(true, "tab");
     }
-  }, [selectedAgentConfigSet, selectedAgentName, sessionStatus]);
+  }, [selectedAgentConfigSet, selectedAgentName, micStatus, tabStatus]);
 
   useEffect(() => {
-    if (sessionStatus === "CONNECTED") {
+    if (micStatus === "CONNECTED") {
       console.log(
-        `updatingSession, isPTTACtive=${isPTTActive} sessionStatus=${sessionStatus}`
+        `updatingSession, isPTTACtive=${isPTTActive} sessionStatus=${micStatus}`
       );
       updateSession();
     }
   }, [isPTTActive]);
 
-  const fetchEphemeralKey = async (): Promise<string | null> => {
+  const fetchEphemeralKey = async (source: "mic" | "tab"): Promise<string | null> => {
     logClientEvent({ url: "/session" }, "fetch_session_token_request");
     const tokenResponse = await fetch("/api/session");
     const data = await tokenResponse.json();
@@ -133,74 +136,109 @@ function App() {
     if (!data.client_secret?.value) {
       logClientEvent(data, "error.no_ephemeral_key");
       console.error("No ephemeral key provided by the server");
-      setSessionStatus("DISCONNECTED");
+      if (source === "mic") setMicStatus("DISCONNECTED");
+      else setTabStatus("DISCONNECTED");
       return null;
     }
 
     return data.client_secret.value;
   };
 
-  const connectToRealtime = async () => {
-    if (sessionStatus !== "DISCONNECTED") return;
-    setSessionStatus("CONNECTING");
-
+  const connectMic = async () => {
+    setMicStatus("CONNECTING");
     try {
-      const EPHEMERAL_KEY = await fetchEphemeralKey();
-      if (!EPHEMERAL_KEY) {
-        return;
+      const key = await fetchEphemeralKey("mic");
+      if (!key) throw new Error("No mic key");
+      setMicEphemeralKey(key);
+      if (!micAudioRef.current) {
+        micAudioRef.current = document.createElement("audio");
       }
-
-      if (!audioElementRef.current) {
-        audioElementRef.current = document.createElement("audio");
-      }
-      audioElementRef.current.autoplay = isAudioPlaybackEnabled;
-
-      const { pc, dc } = await createRealtimeConnection(
-        EPHEMERAL_KEY,
-        audioElementRef
-      );
-      pcRef.current = pc;
-      dcRef.current = dc;
-
-      dc.addEventListener("open", () => {
-        logClientEvent({}, "data_channel.open");
-      });
+      micAudioRef.current.autoplay = isAudioPlaybackEnabled;
+      const { pc, dc } = await createRealtimeConnection(key, micAudioRef, "mic");
+      setMicConnection({ pc, dc });
+      setMicStatus("CONNECTED");
+      
       dc.addEventListener("close", () => {
-        logClientEvent({}, "data_channel.close");
+        console.log("Mic data channel closed");
+        setMicStatus("DISCONNECTED");
       });
       dc.addEventListener("error", (err: any) => {
-        logClientEvent({ error: err }, "data_channel.error");
+        console.error("Mic data channel error:", err);
+        logClientEvent({ error: err }, "mic.data_channel.error");
       });
       dc.addEventListener("message", (e: MessageEvent) => {
-        handleServerEventRef.current(JSON.parse(e.data));
+        handleServerEventRef.current({ ...JSON.parse(e.data), _audioSource: "mic" });
       });
-
-      setDataChannel(dc);
+      
+      updateSession(true, "mic");
     } catch (err) {
-      console.error("Error connecting to realtime:", err);
-      setSessionStatus("DISCONNECTED");
+      console.error("Error connecting mic:", err);
+      setMicStatus("DISCONNECTED");
     }
   };
 
-  const disconnectFromRealtime = () => {
-    if (pcRef.current) {
-      pcRef.current.getSenders().forEach((sender) => {
-        if (sender.track) {
-          sender.track.stop();
-        }
+  const disconnectMic = () => {
+    if (micConnection?.pc) {
+      micConnection.pc.getSenders().forEach((sender) => sender.track?.stop());
+      micConnection.pc.close();
+    }
+    setMicConnection(null);
+    setMicStatus("DISCONNECTED");
+  };
+
+  const connectTab = async () => {
+    setTabStatus("CONNECTING");
+    try {
+      const key = await fetchEphemeralKey("tab");
+      if (!key) throw new Error("No tab key");
+      setTabEphemeralKey(key);
+      if (!tabAudioRef.current) {
+        tabAudioRef.current = document.createElement("audio");
+      }
+      tabAudioRef.current.autoplay = isAudioPlaybackEnabled;
+      const { pc, dc } = await createRealtimeConnection(key, tabAudioRef, "tab");
+      setTabConnection({ pc, dc });
+      setTabStatus("CONNECTED");
+      
+      dc.addEventListener("close", () => {
+        console.log("Tab data channel closed");
+        setTabStatus("DISCONNECTED");
       });
-
-      pcRef.current.close();
-      pcRef.current = null;
+      dc.addEventListener("error", (err: any) => {
+        console.error("Tab data channel error:", err);
+        logClientEvent({ error: err }, "tab.data_channel.error");
+      });
+      dc.addEventListener("message", (e: MessageEvent) => {
+        handleServerEventRef.current({ ...JSON.parse(e.data), _audioSource: "tab" });
+      });
+      
+      updateSession(true, "tab");
+    } catch (err) {
+      console.error("Error connecting tab:", err);
+      setTabStatus("DISCONNECTED");
     }
-    setDataChannel(null);
-    setSessionStatus("DISCONNECTED");
-    setIsPTTUserSpeaking(false);
-
-    logClientEvent({}, "disconnected");
   };
 
-  const sendSimulatedUserMessage = (text: string) => {
+  const disconnectTab = () => {
+    if (tabConnection?.pc) {
+      tabConnection.pc.getSenders().forEach((sender) => sender.track?.stop());
+      tabConnection.pc.close();
+    }
+    setTabConnection(null);
+    setTabStatus("DISCONNECTED");
+  };
+
+  const connectBoth = async () => {
+    await connectMic();
+    await connectTab();
+  };
+
+  const disconnectBoth = () => {
+    disconnectMic();
+    disconnectTab();
+  };
+
+  const sendSimulatedUserMessage = (text: string, source: "mic" | "tab" = "mic") => {
     const id = uuidv4().slice(0, 32);
     addTranscriptMessage(id, "user", text, true);
 
@@ -214,33 +252,45 @@ function App() {
           content: [{ type: "input_text", text }],
         },
       },
-      "(simulated user text message)"
+      "(simulated user text message)",
+      source
     );
     sendClientEvent(
       { type: "response.create" },
-      "(trigger response after simulated user text message)"
+      "(trigger response after simulated user text message)",
+      source
     );
   };
 
-  const updateSession = (shouldTriggerResponse: boolean = false) => {
+  const updateSession = (shouldTriggerResponse: boolean = false, source: "mic" | "tab" = "mic") => {
     sendClientEvent(
       { type: "input_audio_buffer.clear" },
-      "clear audio buffer on session update"
+      "clear audio buffer on session update",
+      source
     );
 
     const currentAgent = selectedAgentConfigSet?.find(
       (a) => a.name === selectedAgentName
     );
 
-    const turnDetection = isPTTActive
-      ? null
-      : {
+    // Different turn detection settings for mic vs tab
+    const turnDetection = source === "tab" 
+      ? {
           type: "server_vad",
-          threshold: 0.5,
-          prefix_padding_ms: 300,
-          silence_duration_ms: 200,
-          create_response: true,
-        };
+          threshold: 0.3, // Lower threshold for tab audio
+          prefix_padding_ms: 500, // Longer prefix padding
+          silence_duration_ms: 500, // Longer silence duration
+          create_response: false, // Don't create response automatically
+        }
+      : isPTTActive
+        ? null
+        : {
+            type: "server_vad",
+            threshold: 0.5,
+            prefix_padding_ms: 300,
+            silence_duration_ms: 200,
+            create_response: true,
+          };
 
     const instructions = currentAgent?.instructions || "";
     const tools = currentAgent?.tools || [];
@@ -259,14 +309,14 @@ function App() {
       },
     };
 
-    sendClientEvent(sessionUpdateEvent);
+    sendClientEvent(sessionUpdateEvent, "", source);
 
     if (shouldTriggerResponse) {
-      sendSimulatedUserMessage("hi");
+      sendSimulatedUserMessage("hi", source);
     }
   };
 
-  const cancelAssistantSpeech = async () => {
+  const cancelAssistantSpeech = async (source: "mic" | "tab" = "mic") => {
     const mostRecentAssistantMessage = [...transcriptItems]
       .reverse()
       .find((item) => item.role === "assistant");
@@ -285,16 +335,17 @@ function App() {
       item_id: mostRecentAssistantMessage?.itemId,
       content_index: 0,
       audio_end_ms: Date.now() - mostRecentAssistantMessage.createdAtMs,
-    });
+    }, "", source);
     sendClientEvent(
       { type: "response.cancel" },
-      "(cancel due to user interruption)"
+      "(cancel due to user interruption)",
+      source
     );
   };
 
-  const handleSendTextMessage = () => {
+  const handleSendTextMessage = (source: "mic" | "tab" = "mic") => {
     if (!userText.trim()) return;
-    cancelAssistantSpeech();
+    cancelAssistantSpeech(source);
 
     sendClientEvent(
       {
@@ -305,42 +356,40 @@ function App() {
           content: [{ type: "input_text", text: userText.trim() }],
         },
       },
-      "(send user text message)"
+      "(send user text message)",
+      source
     );
     setUserText("");
 
-    sendClientEvent({ type: "response.create" }, "trigger response");
+    sendClientEvent({ type: "response.create" }, "trigger response", source);
   };
 
-  const handleTalkButtonDown = () => {
-    if (sessionStatus !== "CONNECTED" || dataChannel?.readyState !== "open")
+  const handleTalkButtonDown = (source: "mic" | "tab" = "mic") => {
+    const connection = source === "mic" ? micConnection : tabConnection;
+    const status = source === "mic" ? micStatus : tabStatus;
+    
+    if (status !== "CONNECTED" || connection?.dc?.readyState !== "open")
       return;
-    cancelAssistantSpeech();
+    cancelAssistantSpeech(source);
 
     setIsPTTUserSpeaking(true);
-    sendClientEvent({ type: "input_audio_buffer.clear" }, "clear PTT buffer");
+    sendClientEvent({ type: "input_audio_buffer.clear" }, "clear PTT buffer", source);
   };
 
-  const handleTalkButtonUp = () => {
+  const handleTalkButtonUp = (source: "mic" | "tab" = "mic") => {
+    const status = source === "mic" ? micStatus : tabStatus;
+    const connection = source === "mic" ? micConnection : tabConnection;
+    
     if (
-      sessionStatus !== "CONNECTED" ||
-      dataChannel?.readyState !== "open" ||
+      status !== "CONNECTED" ||
+      connection?.dc?.readyState !== "open" ||
       !isPTTUserSpeaking
     )
       return;
 
     setIsPTTUserSpeaking(false);
-    sendClientEvent({ type: "input_audio_buffer.commit" }, "commit PTT");
-    sendClientEvent({ type: "response.create" }, "trigger response PTT");
-  };
-
-  const onToggleConnection = () => {
-    if (sessionStatus === "CONNECTED" || sessionStatus === "CONNECTING") {
-      disconnectFromRealtime();
-      setSessionStatus("DISCONNECTED");
-    } else {
-      connectToRealtime();
-    }
+    sendClientEvent({ type: "input_audio_buffer.commit" }, "commit PTT", source);
+    sendClientEvent({ type: "response.create" }, "trigger response PTT", source);
   };
 
   const handleAgentChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -390,13 +439,25 @@ function App() {
   }, [isAudioPlaybackEnabled]);
 
   useEffect(() => {
-    if (audioElementRef.current) {
+    if (micAudioRef.current) {
       if (isAudioPlaybackEnabled) {
-        audioElementRef.current.play().catch((err) => {
+        micAudioRef.current.play().catch((err) => {
           console.warn("Autoplay may be blocked by browser:", err);
         });
       } else {
-        audioElementRef.current.pause();
+        micAudioRef.current.pause();
+      }
+    }
+  }, [isAudioPlaybackEnabled]);
+
+  useEffect(() => {
+    if (tabAudioRef.current) {
+      if (isAudioPlaybackEnabled) {
+        tabAudioRef.current.play().catch((err) => {
+          console.warn("Autoplay may be blocked by browser:", err);
+        });
+      } else {
+        tabAudioRef.current.pause();
       }
     }
   }, [isAudioPlaybackEnabled]);
@@ -483,14 +544,44 @@ function App() {
         </div>
       </div>
 
+      {/* Dual connection controls */}
+      <div className="flex items-center justify-center gap-4 p-2 bg-white border-b border-gray-200">
+        <button
+          className={`px-3 py-1 rounded ${micStatus === "CONNECTED" ? "bg-green-600 text-white" : "bg-gray-200 text-black"}`}
+          onClick={micStatus === "CONNECTED" ? disconnectMic : connectMic}
+        >
+          {micStatus === "CONNECTED" ? "Disconnect Mic" : "Connect Mic"}
+        </button>
+        <button
+          className={`px-3 py-1 rounded ${tabStatus === "CONNECTED" ? "bg-green-600 text-white" : "bg-gray-200 text-black"}`}
+          onClick={tabStatus === "CONNECTED" ? disconnectTab : connectTab}
+        >
+          {tabStatus === "CONNECTED" ? "Disconnect Tab" : "Connect Tab"}
+        </button>
+        <button
+          className="px-3 py-1 rounded bg-black text-white"
+          onClick={connectBoth}
+          disabled={micStatus === "CONNECTED" && tabStatus === "CONNECTED"}
+        >
+          Connect Both
+        </button>
+        <button
+          className="px-3 py-1 rounded bg-red-600 text-white"
+          onClick={disconnectBoth}
+          disabled={micStatus !== "CONNECTED" && tabStatus !== "CONNECTED"}
+        >
+          Disconnect Both
+        </button>
+      </div>
+
       <div className="flex flex-1 gap-2 px-2 overflow-hidden relative">
         <Transcript
           userText={userText}
           setUserText={setUserText}
-          onSendMessage={handleSendTextMessage}
+          onSendMessage={() => handleSendTextMessage(activeSource)}
           canSend={
-            sessionStatus === "CONNECTED" &&
-            dcRef.current?.readyState === "open"
+            (activeSource === "mic" ? micStatus : tabStatus) === "CONNECTED" &&
+            (activeSource === "mic" ? micConnection : tabConnection)?.dc?.readyState === "open"
           }
         />
 
@@ -498,17 +589,18 @@ function App() {
       </div>
 
       <BottomToolbar
-        sessionStatus={sessionStatus}
-        onToggleConnection={onToggleConnection}
+        sessionStatus={activeSource === "mic" ? micStatus : tabStatus}
         isPTTActive={isPTTActive}
         setIsPTTActive={setIsPTTActive}
         isPTTUserSpeaking={isPTTUserSpeaking}
-        handleTalkButtonDown={handleTalkButtonDown}
-        handleTalkButtonUp={handleTalkButtonUp}
+        handleTalkButtonDown={() => handleTalkButtonDown(activeSource)}
+        handleTalkButtonUp={() => handleTalkButtonUp(activeSource)}
         isEventsPaneExpanded={isEventsPaneExpanded}
         setIsEventsPaneExpanded={setIsEventsPaneExpanded}
         isAudioPlaybackEnabled={isAudioPlaybackEnabled}
         setIsAudioPlaybackEnabled={setIsAudioPlaybackEnabled}
+        activeSource={activeSource}
+        setActiveSource={setActiveSource}
       />
     </div>
   );

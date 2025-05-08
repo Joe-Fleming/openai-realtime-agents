@@ -2,88 +2,87 @@ import { RefObject } from "react";
 
 export async function createRealtimeConnection(
   EPHEMERAL_KEY: string,
-  audioElement: RefObject<HTMLAudioElement | null>
+  audioElement: RefObject<HTMLAudioElement | null>,
+  audioSource: "mic" | "tab"
 ): Promise<{ pc: RTCPeerConnection; dc: RTCDataChannel }> {
-  const pc = new RTCPeerConnection({
-    iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
-  });
+  const pc = new RTCPeerConnection();
 
-  // Handle incoming audio stream
-  pc.ontrack = (event) => {
-    if (audioElement.current && event.streams[0]) {
-      audioElement.current.srcObject = event.streams[0];
+  pc.ontrack = (e) => {
+    if (audioElement.current) {
+        audioElement.current.srcObject = e.streams[0];
     }
   };
 
-  try {
-    // Request both system audio and microphone
-    const [systemStream, micStream] = await Promise.all([
-      navigator.mediaDevices.getDisplayMedia({
-        audio: {
-          echoCancellation: false,
-          noiseSuppression: false,
-          autoGainControl: false,
-        },
-        video: false
-      }),
-      navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: { ideal: true },
-          noiseSuppression: { ideal: true },
-          autoGainControl: { ideal: true },
-          channelCount: { ideal: 1 },
-          sampleRate: { ideal: 16000 },
-          sampleSize: { ideal: 16 }
-        },
-        video: false
-      })
-    ]);
+  let stream: MediaStream | null = null;
 
-    // Create a combined stream with both audio sources
-    const stream = new MediaStream([
-      ...systemStream.getAudioTracks(),
-      ...micStream.getAudioTracks()
-    ]);
-
-    // Add each audio track to the peer connection
-    stream.getAudioTracks().forEach(track => {
-      pc.addTrack(track, stream);
-    });
-
-    // Create data channel for events
-    const dc = pc.createDataChannel("oai-events", {
-      ordered: true
-    });
-
-    // Create and set local description
-    const offer = await pc.createOffer({
-      offerToReceiveAudio: true,
-      offerToReceiveVideo: false
-    });
-    await pc.setLocalDescription(offer);
-
-    // Send offer to OpenAI's realtime API
-    const baseUrl = "https://api.openai.com/v1/realtime";
-    const model = "gpt-4o-realtime-preview-2024-12-17";
-
-    const sdpResponse = await fetch(`${baseUrl}?model=${model}`, {
-      method: "POST",
-      body: offer.sdp,
-      headers: {
-        Authorization: `Bearer ${EPHEMERAL_KEY}`,
-        "Content-Type": "application/sdp",
-      },
-    });
-
-    const answerSdp = await sdpResponse.text();
-    await pc.setRemoteDescription({
-      type: "answer",
-      sdp: answerSdp,
-    });
-
-    return { pc, dc };
-  } catch (error) {
-    console.error("Error in WebRTC setup:", error);
-    throw error;
+  if (audioSource === "tab") {
+    alert("In the next dialog, select the tab you want to share audio from. Make sure the tab is playing audio!");
+    try {
+      stream = await navigator.mediaDevices.getDisplayMedia({
+        audio: true,
+        video: true
+      });
+    } catch (err) {
+      alert('No stream was captured. Please try again.');
+      throw new Error('No stream was captured.');
+    }
+    const audioTrack = stream.getAudioTracks()[0];
+    if (!audioTrack || audioTrack.label.toLowerCase().includes('microphone')) {
+      alert('You selected a source that does not provide tab audio. Please select a tab that is playing audio.');
+      throw new Error('No tab audio found.');
+    }
+    pc.addTrack(audioTrack);
+  } else {
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (err) {
+      alert('Microphone access denied or not available.');
+      throw new Error('No mic audio found.');
+    }
+    const audioTrack = stream.getAudioTracks()[0];
+    if (audioTrack) {
+      pc.addTrack(audioTrack);
+    } else {
+      alert('No microphone audio track found.');
+      throw new Error('No mic audio found.');
+    }
   }
-}
+
+  const dc = pc.createDataChannel("oai-events");
+
+  // Create a promise that resolves when the data channel is open
+  const dataChannelOpen = new Promise<void>((resolve) => {
+    dc.onopen = () => {
+      console.log(`Data channel opened for ${audioSource}`);
+      resolve();
+    };
+  });
+
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+
+  const baseUrl = "https://api.openai.com/v1/realtime";
+  const model = "gpt-4o-realtime-preview-2024-12-17";
+
+  const sdpResponse = await fetch(`${baseUrl}?model=${model}`, {
+    method: "POST",
+    body: offer.sdp,
+    headers: {
+      Authorization: `Bearer ${EPHEMERAL_KEY}`,
+      "Content-Type": "application/sdp",
+    },
+  });
+
+  const answerSdp = await sdpResponse.text();
+  const answer: RTCSessionDescriptionInit = {
+    type: "answer",
+    sdp: answerSdp,
+  };
+
+  await pc.setRemoteDescription(answer);
+
+  // Wait for the data channel to be open before returning
+  await dataChannelOpen;
+
+  return { pc, dc };
+} 
