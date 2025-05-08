@@ -135,7 +135,7 @@ export function useHandleServerEvent({
           if (role === "user" && !text) {
             text = "[Transcribing...]";
           }
-          addTranscriptMessage(itemId, role, text);
+          addTranscriptMessage(itemId, role, text, false, source);
         }
         break;
       }

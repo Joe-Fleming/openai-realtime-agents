@@ -81,7 +81,7 @@ function Transcript({
           className="overflow-auto p-4 flex flex-col gap-y-4 h-full"
         >
           {transcriptItems.map((item) => {
-            const { itemId, type, role, data, expanded, timestamp, title = "", isHidden } = item;
+            const { itemId, type, role, data, expanded, timestamp, title = "", isHidden, source } = item;
 
             if (isHidden) {
               return null;
@@ -99,8 +99,13 @@ function Transcript({
               return (
                 <div key={itemId} className={containerClasses}>
                   <div className={bubbleBase}>
-                    <div className={`text-xs ${isUser ? "text-gray-400" : "text-gray-500"} font-mono`}>
-                      {timestamp}
+                    <div className={`text-xs ${isUser ? "text-gray-400" : "text-gray-500"} font-mono flex items-center gap-2`}>
+                      <span>{timestamp}</span>
+                      {source && (
+                        <span className={`px-1.5 py-0.5 rounded text-xs ${source === "mic" ? "bg-blue-100 text-blue-800" : "bg-purple-100 text-purple-800"}`}>
+                          {source}
+                        </span>
+                      )}
                     </div>
                     <div className={`whitespace-pre-wrap ${messageStyle}`}>
                       <ReactMarkdown>{displayTitle}</ReactMarkdown>

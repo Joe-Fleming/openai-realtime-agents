@@ -50,6 +50,7 @@ export interface TranscriptItem {
   createdAtMs: number;
   status: "IN_PROGRESS" | "DONE";
   isHidden: boolean;
+  source?: "mic" | "tab";
 }
 
 export interface Log {

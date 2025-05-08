@@ -56,16 +56,20 @@ function App() {
 
   const sendClientEvent = (eventObj: any, eventNameSuffix = "", source: "mic" | "tab" = "mic") => {
     const connection = source === "mic" ? micConnection : tabConnection;
-    if (connection?.dc && connection.dc.readyState === "open") {
+    if (connection?.dc?.readyState === "open") {
       logClientEvent(eventObj, eventNameSuffix);
       connection.dc.send(JSON.stringify(eventObj));
+    } else if (connection?.dc?.readyState === "connecting") {
+      // If the channel is still connecting, we can silently ignore the event
+      return;
     } else {
+      // Only log errors for non-connecting states
       logClientEvent(
         { attemptedEvent: eventObj.type },
         "error.data_channel_not_open"
       );
-      console.error(
-        "Failed to send message - no data channel available",
+      console.warn(
+        "Failed to send message - data channel not ready",
         eventObj
       );
     }
@@ -113,10 +117,16 @@ function App() {
     if ((micStatus === "CONNECTED" || tabStatus === "CONNECTED") && selectedAgentConfigSet && selectedAgentName) {
       const currentAgent = selectedAgentConfigSet.find((a) => a.name === selectedAgentName);
       addTranscriptBreadcrumb(`Agent: ${selectedAgentName}`, currentAgent);
-      if (micStatus === "CONNECTED") updateSession(true, "mic");
-      if (tabStatus === "CONNECTED") updateSession(true, "tab");
+      
+      // Only update session if the data channel is open
+      if (micStatus === "CONNECTED" && micConnection?.dc?.readyState === "open") {
+        updateSession(true, "mic");
+      }
+      if (tabStatus === "CONNECTED" && tabConnection?.dc?.readyState === "open") {
+        updateSession(true, "tab");
+      }
     }
-  }, [selectedAgentConfigSet, selectedAgentName, micStatus, tabStatus]);
+  }, [selectedAgentConfigSet, selectedAgentName, micStatus, tabStatus, micConnection?.dc?.readyState, tabConnection?.dc?.readyState]);
 
   useEffect(() => {
     if (micStatus === "CONNECTED") {
@@ -240,7 +250,7 @@ function App() {
 
   const sendSimulatedUserMessage = (text: string, source: "mic" | "tab" = "mic") => {
     const id = uuidv4().slice(0, 32);
-    addTranscriptMessage(id, "user", text, true);
+    addTranscriptMessage(id, "user", text, true, source);
 
     sendClientEvent(
       {
@@ -300,9 +310,7 @@ function App() {
       session: {
         modalities: ["text", "audio"],
         instructions,
-        voice: "coral",
         input_audio_format: "pcm16",
-        output_audio_format: "pcm16",
         input_audio_transcription: { model: "whisper-1" },
         turn_detection: turnDetection,
         tools,
@@ -470,15 +478,16 @@ function App() {
         <div className="flex items-center">
           <div onClick={() => window.location.reload()} style={{ cursor: 'pointer' }}>
             <Image
-              src="/openai-logomark.svg"
-              alt="OpenAI Logo"
-              width={20}
-              height={20}
-              className="mr-2"
+              src="/openai-logomark.png"
+              alt="JARVIS Logo"
+              width={75}
+              height={75}
+              className="mr-2 rounded-full bg-black"
             />
           </div>
-          <div>
-            Realtime API <span className="text-gray-500">Agents</span>
+          <div className="flex items-center gap-2">
+            <span>JARVIS</span>
+            <span className="text-blue-600 font-semibold">Meeting Copilot</span>
           </div>
         </div>
         <div className="flex items-center">
