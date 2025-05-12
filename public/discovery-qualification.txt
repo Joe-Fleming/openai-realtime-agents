@@ -1,0 +1,16 @@
+discoveryQuestions:
+- Why did you take this meeting—what specifically caught your interest?
+- What LLMs and inference platforms do you currently use?
+- How much do you spend monthly/yearly on inference?
+- Who oversees your MLOps and model deployment?
+- What does your AI model development lifecycle look like?
+- What are your key business objectives, priority projects, and associated KPIs/OKRs?
+painPointExploration:
+- What are your team's primary concerns with your current AI infrastructure?
+- What specific challenges do you face around GPU utilization, cost management, and deployment speed?
+- How do these pains impact your day-to-day operations and strategic goals?
+meetingPreparation:
+- Research attendees (roles, recent news, profiles)
+- Understand their objectives, KPIs, OKRs
+- Develop specific hypotheses about their current situation (models used, inference spend, operational bottlenecks)
+- Prepare tailored questions and talking points based on individual attendees' responsibilities, roles, and psychographic profiles 

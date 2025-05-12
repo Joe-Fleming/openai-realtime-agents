@@ -1,0 +1,66 @@
+[
+  {
+    "question": "How is pricing structured?",
+    "answer": "We offer flat-rate pricing tiers, designed to be predictable regardless of inference volume. No per-inference fees or hidden GPU surcharges."
+  },
+  {
+    "question": "What's the average latency per inference?",
+    "answer": "Latency depends on model size, but we optimize for low-latency inference and autoscale on demand. For common LLMs and vision models, typical latency is sub-second to a few seconds."
+  },
+  {
+    "question": "How does the platform handle traffic spikes?",
+    "answer": "Featherless.ai is serverless and auto-scales horizontally to handle traffic bursts without requiring manual provisioning."
+  },
+  {
+    "question": "What models are supported?",
+    "answer": "We support 4,000+ open-source models across NLP, vision, and speech. This includes popular models from Hugging Face, OpenAI-compatible models, and more."
+  },
+  {
+    "question": "Can I deploy custom or fine-tuned models?",
+    "answer": "Yes, you can upload and deploy your own custom or fine-tuned models onto Featherless.ai."
+  },
+  {
+    "question": "Do you support OpenAI API compatibility?",
+    "answer": "Yes, Featherless.ai provides OpenAI-compatible APIs so you can swap endpoints without rewriting integration code."
+  },
+  {
+    "question": "How do I deploy a model?",
+    "answer": "Deployment is instant—upload the model or select from the library, configure basic parameters, and get an endpoint ready to use. No infrastructure management required."
+  },
+  {
+    "question": "Can I update a model without downtime?",
+    "answer": "Yes, you can deploy new versions with zero-downtime swaps and optional version pinning."
+  },
+  {
+    "question": "Is data encrypted? Where is it processed?",
+    "answer": "Data is encrypted in transit and at rest. We currently deploy in [insert region(s)], with options for custom/private deployments for compliance needs."
+  },
+  {
+    "question": "Do you offer private or on-prem deployment?",
+    "answer": "Yes, we support private deployments for customers needing dedicated environments or compliance with strict data regulations."
+  },
+  {
+    "question": "How do I integrate with existing apps?",
+    "answer": "Integration is via simple REST APIs or OpenAI-compatible endpoints. We also offer SDKs for Python and other languages (SDK roadmap expanding)."
+  },
+  {
+    "question": "Do you offer uptime SLAs?",
+    "answer": "We offer SLAs under enterprise plans, with high-availability guarantees and priority support."
+  },
+  {
+    "question": "What metrics and logs are available?",
+    "answer": "Real-time metrics include request counts, latency, error rates, and usage dashboards. Logs are accessible via API or web UI with export options."
+  },
+  {
+    "question": "How do you handle customer data privacy?",
+    "answer": "We do not store input or output data by default. For enterprise customers, we offer configurable retention policies, data isolation, and the option for private deployment to ensure full control over data privacy."
+  },
+  {
+    "question": "What support options are available?",
+    "answer": "We offer community support, business support, and enterprise support tiers, depending on response time and SLAs required."
+  },
+  {
+    "question": "How is Featherless.ai different from AWS SageMaker, Replicate, or Hugging Face?",
+    "answer": "Featherless.ai focuses on zero-config, instant deployment of open-source models with flat-rate, predictable pricing, OpenAI API compatibility, and multilingual inference out of the box—without vendor lock-in or complex setup."
+  }
+]

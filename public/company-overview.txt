@@ -1,0 +1,20 @@
+aboutUs: Featherless.ai is a serverless platform for running open-source and fine-tuned AI models at scale, with sub-5s hot-swapping and GPU cost optimization built in. We make AI deployment fast, cheap, and dead simple.
+whyWeExist: We democratize AI infrastructure by eliminating deployment friction, reducing costs, and accelerating innovation for enterprise AI teams.
+whatWeDo: Provide serverless deployment and management of AI models with enterprise-level security, scalability, and performance.
+industryTrends:
+- Rapid adoption of open-source LLMs (e.g., LLaMA, RWKV)
+- Transition to serverless, scalable architectures
+- Cost-sensitive, high-performance AI deployment
+- Demand for simplified AI operations
+competitorPositioning:
+  competitors: RunPod, Hugging Face, AWS Bedrock
+  featherlessAdvantages:
+    - Serverless instant scaling
+    - Cost-effective (flat-rate pricing)
+    - OpenAI-compatible API
+    - Extensive model catalog support
+valuePropositions:
+  gpuUtilization: Increase by up to 4x
+  deploymentSpeed: From hours to seconds
+  costSavings: Reduce infrastructure expenses by >4x
+  scalabilityFlexibility: Instant access to thousands of models 

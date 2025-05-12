@@ -1,0 +1,27 @@
+targetPersonas:
+- Title: CTO / CIO
+  Concerns:
+    - Infrastructure efficiency
+    - Long-term scalability
+    - Operational reliability
+    - Stringent cost control
+- Title: Head of AI / ML
+  Concerns:
+    - Drives innovation and experimentation
+    - Seeks rapid deployment
+    - Ease of model iteration
+    - Reduced barriers for exploring new models and AI capabilities
+- Title: DevOps/MLOps Manager
+  Concerns:
+    - Operational excellence
+    - Simplifying infrastructure management
+    - Maximizing GPU utilization
+    - Minimizing downtime and maintenance overhead
+idealCustomerProfile:
+  description: Mid-to-large enterprises within tech, finance, healthcare, or manufacturing sectors, particularly those heavily invested in AI-driven innovation.
+  characteristics:
+    - Currently deploying or planning significant scale-up of AI models
+    - Struggling with GPU utilization inefficiencies
+    - High inference costs
+    - Slow deployment cycles
+    - Complex infrastructure management 
